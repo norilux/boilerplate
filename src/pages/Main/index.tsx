@@ -1,11 +1,12 @@
 // Core
-import React, { FC, useRef, useState } from 'react';
+import React, { FC, useEffect, useRef, useState } from 'react';
 
 // Components
 import { ErrorBoundary, Todo } from '../../components';
 
 // Api
-import { useTodosQuery, useCreateTodo, useUpdateTodo, useDeleteTodo } from '../../bus/todos';
+import { useUpdateTodo, useDeleteTodo } from '../../bus/todos';
+import { createTodo } from '../../bus/todos/api';
 
 // Redux
 import { useTogglersRedux } from '../../bus/client/togglers';
@@ -15,29 +16,44 @@ import { Button, Spinner } from '../../elements';
 
 // Styles
 import { Container, Header } from './styles';
+import { useTodoState } from '../../hooks/state/todo';
+import { fetchTodos } from '../../bus/todos/api';
 
 const Main: FC = () => {
     const [ text, setText ] = useState<string>('');
     const headerRef = useRef<HTMLElement>(null);
     const { togglersRedux: { isOnline }} = useTogglersRedux();
+    const todoState = useTodoState();
+    useEffect(() => {
+        fetchTodos()
+            .then((r) => {
+                r.reverse().map((item) => todoState.addTodo(item));
+            })
+            .catch((error) => error);
+    }, []);
 
-    const { data, isLoading: isTodosLoading } = useTodosQuery();
-    const [ createTodo, { isLoading: isCreateTodoLoading }] = useCreateTodo();
-    const [ updateTodo, { isLoading: isUpdateTodoLoading }] = useUpdateTodo();
-    const [ deleteTodo, { isLoading: isDeleteTodoLoading }] = useDeleteTodo();
+    //todoState.addTodo({});
 
-    const isLoading = isTodosLoading
-        || isCreateTodoLoading
-        || isUpdateTodoLoading
-        || isDeleteTodoLoading;
+    const data = todoState.state;
+    // const { data, isLoading: isTodosLoading } = useTodosQuery();
+    //const [ createTodo, { isLoading: isCreateTodoLoading }] = useCreateTodo();
+    const updateTodo = useUpdateTodo();
+    const deleteTodo = useDeleteTodo();
 
-    if (!data || isLoading) {
-        return <Spinner />;
-    }
+    // const isLoading //isTodosLoading
+    //       = //isCreateTodoLoading
+    //     || isUpdateTodoLoading
+    //     || isDeleteTodoLoading;
+    // console.log(data);
+    // if (!data || isLoading) {
+    //     return <Spinner />;
+    // }
 
     const onCreate = () => {
         if (text !== '') {
-            createTodo({ body: { text }});
+            createTodo({ body: { text }})
+                .then((r) => todoState.addTodo(r))
+                .catch((error) => error);
             setText('');
         }
     };
@@ -67,7 +83,7 @@ const Main: FC = () => {
                             isColor = { Boolean(index % 2) }
                             key = { todo.id }
                             { ...todo }
-                            deleteHandler = { () => void deleteTodo({ todoId: todo.id }) }
+                            deleteHandler = { () => void deleteTodo({ id: todo.id }) }
                             updateHandler = { () => void updateTodo({
                                 todoId: todo.id,
                                 body:   { isCompleted: !todo.isCompleted },
