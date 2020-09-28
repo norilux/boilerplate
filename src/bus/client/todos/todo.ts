@@ -5,6 +5,7 @@ import {
     pushItemToObjectArray,
 } from '../../../utils/helpers';
 
+// === === === Initial state === === ===
 const initialState: ToDoStateType = [];
 
 // === === === Types === === ===

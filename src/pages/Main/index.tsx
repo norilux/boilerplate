@@ -22,37 +22,36 @@ import { fetchTodos } from '../../bus/todos/api';
 const Main: FC = () => {
     const [ text, setText ] = useState<string>('');
     const headerRef = useRef<HTMLElement>(null);
-    const { togglersRedux: { isOnline }} = useTogglersRedux();
+    const { togglersRedux: { isOnline, isLoadingTodo }, setTogglerAction } = useTogglersRedux();
     const todoState = useTodoState();
     useEffect(() => {
+        setTogglerAction({ type: 'isLoadingTodo', value: true });
         fetchTodos()
             .then((r) => {
+                setTogglerAction({ type: 'isLoadingTodo', value: false });
                 r.reverse().map((item) => todoState.addTodo(item));
             })
             .catch((error) => error);
     }, []);
 
-    //todoState.addTodo({});
-
     const data = todoState.state;
-    // const { data, isLoading: isTodosLoading } = useTodosQuery();
-    //const [ createTodo, { isLoading: isCreateTodoLoading }] = useCreateTodo();
     const updateTodo = useUpdateTodo();
     const deleteTodo = useDeleteTodo();
 
-    // const isLoading //isTodosLoading
-    //       = //isCreateTodoLoading
-    //     || isUpdateTodoLoading
-    //     || isDeleteTodoLoading;
-    // console.log(data);
-    // if (!data || isLoading) {
-    //     return <Spinner />;
-    // }
+    const isLoading = !isOnline || isLoadingTodo;
+    console.log(data);
+    if (!data || isLoading) {
+        return <Spinner />;
+    }
 
     const onCreate = () => {
         if (text !== '') {
+            setTogglerAction({ type: 'isLoadingTodo', value: true });
             createTodo({ body: { text }})
-                .then((r) => todoState.addTodo(r))
+                .then((r) => {
+                    setTogglerAction({ type: 'isLoadingTodo', value: false });
+                    todoState.addTodo(r);
+                })
                 .catch((error) => error);
             setText('');
         }
@@ -60,7 +59,7 @@ const Main: FC = () => {
 
     return (
         <Container>
-            {false && <Spinner absolute />}
+            {isLoading && <Spinner absolute />}
             <Header ref = { headerRef }>
                 <nav />
                 <input
